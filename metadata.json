@@ -1,0 +1,6 @@
+{
+  "name": "RiskLens",
+  "description": "An interactive full-stack AI risk intelligence and financial impact modeling platform powered by Gemini.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

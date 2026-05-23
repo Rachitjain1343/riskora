@@ -1,0 +1,104 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Default-deny catch-all safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Mandatory Email verification guard
+    function isVerified() {
+      return isSignedIn() && (
+        request.auth.token.email_verified == true
+      );
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Profile Schema Validation Checkers
+    function hasRequiredProfileKeys(data) {
+      return data.keys().hasAll(['uid', 'email', 'createdAt', 'updatedAt']) 
+        && data.keys().size() >= 4;
+    }
+
+    function isValidProfile(data) {
+      return hasRequiredProfileKeys(data)
+        && data.uid == request.auth.uid
+        && data.email is string && data.email.size() <= 256
+        && (data.get('displayName', '') is string && data.get('displayName', '').size() <= 256)
+        && (data.get('photoURL', '') is string && data.get('photoURL', '').size() <= 1024)
+        && (data.get('defaultRegion', '') is string && data.get('defaultRegion', '').size() <= 100)
+        && (data.get('defaultIndustry', '') is string && data.get('defaultIndustry', '').size() <= 100)
+        && (data.get('hasPremium', false) is bool);
+    }
+
+    // Risk Report Schema Validation Checkers
+    function hasRequiredReportKeys(data) {
+      return data.keys().hasAll([
+        'id', 'userId', 'profileType', 'domain', 'scaleEstimate', 
+        'region', 'geopoliticalScenario', 'summary', 'createdAt'
+      ]) && data.keys().size() >= 9;
+    }
+
+    function isValidReport(data) {
+      return hasRequiredReportKeys(data)
+        && data.id is string && data.id.size() <= 128
+        && data.userId == request.auth.uid
+        && (data.profileType == 'Individual' || data.profileType == 'Business')
+        && data.domain is string && data.domain.size() <= 256
+        && data.scaleEstimate is string && data.scaleEstimate.size() <= 256
+        && data.region is string && data.region.size() <= 256
+        && data.geopoliticalScenario is string && data.geopoliticalScenario.size() <= 512
+        && data.summary is string && data.summary.size() <= 16384
+        && (data.get('isDeepAnalysis', false) is bool);
+    }
+
+    // 2. Users Profiles Collection Matches
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) 
+        && isVerified()
+        && isValidId(userId)
+        && isValidProfile(request.resource.data)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if isOwner(userId) 
+        && isVerified()
+        && isValidProfile(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if isOwner(userId);
+
+      // 3. User subcollection reports
+      match /reports/{reportId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        
+        allow create: if isOwner(userId)
+          && isVerified()
+          && isValidId(reportId)
+          && isValidReport(request.resource.data)
+          && request.resource.data.createdAt == request.time;
+          
+        allow update: if isOwner(userId)
+          && isVerified()
+          && isValidReport(request.resource.data)
+          && request.resource.data.createdAt == resource.data.createdAt;
+          
+        allow delete: if isOwner(userId);
+      }
+    }
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Represents a registered user's profile and baseline configuration.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "The unique Firebase Auth identifier."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "The user's presentation name."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's primary email address."
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "URL to the user's profile image."
+        },
+        "defaultRegion": {
+          "type": "string",
+          "description": "Optional default region configuration."
+        },
+        "defaultIndustry": {
+          "type": "string",
+          "description": "Optional default industry domain configuration."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "email"]
+    },
+    "RiskReportEntity": {
+      "title": "RiskReportEntity",
+      "description": "A quantitative geopolitical risk report card with financial simulations.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique report identification string."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The owner's Firebase Auth UID."
+        },
+        "profileType": {
+          "type": "string",
+          "enum": ["Individual", "Business"],
+          "description": "Type of client sandbox profile analyzed."
+        },
+        "domain": {
+          "type": "string",
+          "description": "The industry domain evaluated."
+        },
+        "scaleEstimate": {
+          "type": "string",
+          "description": "Input scaling tier."
+        },
+        "region": {
+          "type": "string",
+          "description": "The resolved operational region."
+        },
+        "geopoliticalScenario": {
+          "type": "string",
+          "description": "The escalation scenario simulation target."
+        },
+        "summary": {
+          "type": "string",
+          "description": "Executive summarization narrative."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp indicating report generation."
+        }
+      },
+      "required": ["id", "userId", "profileType", "domain", "scaleEstimate", "region", "geopoliticalScenario", "summary"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Isomorphic user configuration nodes."
+    },
+    "/users/{userId}/reports/{reportId}": {
+      "schema": "RiskReportEntity",
+      "description": "User specific geopolitical analysis histories."
+    }
+  }
+}
